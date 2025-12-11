@@ -24,4 +24,4 @@ package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["carbus_async", "isotp_async", "uds_async"]
+include = ["carbus_async*", "isotp_async*", "uds_async*"]

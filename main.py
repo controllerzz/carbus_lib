@@ -9,7 +9,7 @@ from uds_async.client import UdsClient
 import logging
 
 
-async def main(is_debug=True):
+async def main(is_debug=False):
 
     if is_debug:
         logging.basicConfig(
@@ -57,4 +57,4 @@ async def main(is_debug=True):
     await dev.close()
 
 
-asyncio.run(main(is_debug=True))
+asyncio.run(main())

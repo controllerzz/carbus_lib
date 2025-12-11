@@ -15,7 +15,12 @@
 
 ## Установка
 
-Пока проект в разработке, можно ставить его как editable-модуль из репозитория:
+Через систему управления пакетами PIP
+````bash
+python -m pip install carbus-lib
+````
+
+Либо как editable-модуль из репозитория:
 
 ```bash
 git clone https://github.com/controllerzz/carbus_lib.git
@@ -189,12 +194,12 @@ asyncio.run(main())
 
 Для отладки удобно включить подробное логирование:
 ````python
-    import logging
+import logging
 
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 ````
 Логгеры:
 
