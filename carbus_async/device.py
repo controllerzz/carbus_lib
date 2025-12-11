@@ -761,6 +761,96 @@ class CarBusDevice:
                 f"Unexpected CHANNEL_OPEN response: cmd=0x{cmd:02X}, flags=0x{flags:04X}"
             )
 
+    async def open_can_channel_custom(
+            self,
+            channel: int = 1,
+            *,
+            nominal: tuple[int, int, int, int] | None,
+            data: tuple[int, int, int, int] | None = None,
+            fd: bool = False,
+            brs: bool = False,
+            listen_only: bool = False,
+            loopback: bool = False,
+            retransmit: bool = False,
+            non_iso: bool = False,
+    ) -> None:
+
+        def _build_bus_custom_baudrate_words(
+            base_cc: int,
+            prescaler: int,
+            seg1: int,
+            seg2: int,
+            sjw: int,
+        ) -> list[int]:
+
+            packed = struct.pack("<HHHH", prescaler, seg1, seg2, sjw)
+            word1 = int.from_bytes(packed[0:4], "little")
+            word2 = int.from_bytes(packed[4:8], "little")
+
+            length_words = 2
+            header = base_cc | CC_MULTIWORD | ((length_words & 0xFF) << 16)
+            return [header, word1, word2]
+
+        # 1) CAN mode
+        if loopback:
+            mode_val = 0x02
+        elif listen_only:
+            mode_val = 0x01
+        else:
+            mode_val = 0x00
+        cc_can_mode = 0x11000000 | mode_val
+
+        # 2) CAN frame (classic/FD/BRS)
+        if not fd:
+            frame_mode = 0x00  # classic
+        else:
+            frame_mode = 0x02 if brs else 0x01
+        cc_can_frame = 0x12000000 | frame_mode
+
+        params: list[int] = [cc_can_mode, cc_can_frame]
+
+        # 3) Nominal custom bitrate (CC_BUS_SPEED_N)
+        if nominal is not None:
+            presc, seg1, seg2, sjw = nominal
+            header_n = 0x01000000 | CC_MULTIWORD | (2 << 16)
+            params.append(header_n)
+
+            b = struct.pack("<HHHH", presc, seg1, seg2, sjw)  # BusCustomBaudRate
+            params.append(int.from_bytes(b[0:4], "little"))
+            params.append(int.from_bytes(b[4:8], "little"))
+
+        # 4) Data custom bitrate (CC_BUS_SPEED_D)
+        if fd and data is not None:
+            presc, seg1, seg2, sjw = data
+            header_d = 0x02000000 | CC_MULTIWORD | (2 << 16)
+            params.append(header_d)
+
+            b = struct.pack("<HHHH", presc, seg1, seg2, sjw)
+            params.append(int.from_bytes(b[0:4], "little"))
+            params.append(int.from_bytes(b[4:8], "little"))
+
+        # доп. опции
+        if retransmit:
+            params.append(0x13000001)
+        if non_iso:
+            params.append(0x14000001)
+
+        payload = b"".join(p.to_bytes(4, "little") for p in params)
+
+        header_flags = (channel & 0x0F) * 0x20
+        cmd, flags, resp_payload = await self._send_raw(
+            Command.CHANNEL_OPEN,
+            header_flags=header_flags,
+            payload=payload,
+            expect_response=True,
+        )
+
+        if not is_ack(cmd) or base_command_from_ack(cmd) != Command.CHANNEL_OPEN:
+            raise CommandError(
+                f"Unexpected CHANNEL_OPEN response: cmd=0x{cmd:02X}, flags=0x{flags:04X}"
+            )
+
+
     async def set_can_filter(
         self,
         channel: int,

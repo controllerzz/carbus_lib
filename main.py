@@ -1,5 +1,6 @@
 import asyncio
 
+from carbus_async import CanMessage
 from carbus_async.device import CarBusDevice
 from isotp_async.carbus_iface import CarBusCanTransport
 from isotp_async.transport import IsoTpChannel
@@ -28,6 +29,9 @@ async def main(is_debug=True):
 
     await asyncio.sleep(0.5)
 
+    msg = CanMessage(can_id=0x7E0, data=b"\x02\x3E\x00\x00\x00\x00\x00\x00",fd=True, brs=True)
+    await dev.send_can(msg, channel=1)
+
     info = await dev.get_device_info()
     print("HW:", info.hardware_id, info.hardware_name)
     print("FW:", info.firmware_version)
@@ -53,4 +57,4 @@ async def main(is_debug=True):
     await dev.close()
 
 
-asyncio.run(main(is_debug=False))
+asyncio.run(main(is_debug=True))

@@ -42,7 +42,7 @@ pip install -e .
 
 ---
 
-## 1. Работа с CAN
+## Работа с CAN
 
 Простейший пример: открыть устройство, настроить канал и отправить / принять кадр.
 
@@ -60,7 +60,7 @@ async def main():
         nominal_bitrate=500_000,
     )
 
-    # включаем терминатор 120 Ом на канале 1
+    # включаем терминатор 120 Ω на канале 1
     await dev.set_terminator(channel=1, enabled=True)
 
     # отправка кадра 0x7E0 8 байт
@@ -76,8 +76,19 @@ async def main():
 asyncio.run(main())
 ````
 
+Возможность настройки канала через Bit Timing
+````python
+# CANFD+BRS 500/2000 kbit/s
+await dev.open_can_channel_custom(
+    channel=1,
+    nominal=(15, 12, 3, 1),  # Prescaler, tqSeg1, tqSeg2, SyncJW
+    data=(6, 7, 2, 1),  # Prescaler, tqSeg1, tqSeg2, SyncJW
+    fd=True,
+    brs=True,
+)
+````
 
-## 2. Информация об устройстве и фильтры
+## Информация об устройстве и фильтры
 
 Пример запроса DEVICE_INFO и настройки фильтров:
 ````python
@@ -102,7 +113,7 @@ await dev.set_std_id_filter(
 await dev.set_terminator(channel=1, enabled=True)
 ````
 
-## 3. ISO-TP (isotp_async)
+## ISO-TP (isotp_async)
 ISO-TP канал строится поверх CarBusDevice:
 ````python
 from isotp_async.transport import IsoTpChannel
@@ -118,7 +129,7 @@ resp = await isotp.recv_pdu(timeout=30.0)
 print("ISO-TP:", resp.hex())
 ````
 
-## 4. UDS Client (uds_async.client)
+## UDS Client (uds_async.client)
 
 Клиент UDS использует IsoTpChannel:
 ````python
@@ -136,9 +147,9 @@ print("VIN:", vin.decode(errors="ignore"))
 
 
 
-## 5. Удалённая работа через TCP (tcp_bridge)
+## Удалённая работа через TCP (tcp_bridge)
 
-### 5.1. Сервер (рядом с адаптером)
+### 1. Сервер (рядом с адаптером)
 
 На машине, где физически подключён CAN-адаптер:
 
@@ -146,7 +157,7 @@ print("VIN:", vin.decode(errors="ignore"))
 
 Адаптер открывается локально, а поверх него поднимается TCP-мост.
 
-### 5.2. Клиент (удалённая машина)
+### 2. Клиент (удалённая машина)
 
 На другой машине можно использовать тот же API, как с локальным COM, но через `open_tcp`:
 ````python
@@ -174,7 +185,7 @@ async def main():
 asyncio.run(main())
 ````
 
-## 6. Логирование
+## Логирование
 
 Для отладки удобно включить подробное логирование:
 ````python
@@ -193,7 +204,7 @@ asyncio.run(main())
 
 ---
 
-## 7. Лицензия
+## Лицензия
 
 MIT. 
   
