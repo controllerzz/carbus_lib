@@ -122,18 +122,16 @@ print("ISO-TP:", resp.hex())
 
 Клиент UDS использует IsoTpChannel:
 ````python
-from uds_async.client import UdsClient
+from isotp_async import CarBusCanTransport
 from isotp_async.transport import IsoTpChannel
+from uds_async import UdsClient
 
-isotp = IsoTpChannel(dev, channel=1, tx_id=0x7E0, rx_id=0x7E8)
-uds = UdsClient(isotp_channel=isotp)
+can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)
+isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
+uds = UdsClient(isotp)
 
-# переход в расширенную диагностическую сессию
-await uds.diagnostic_session_control(0x03)
-
-# чтение VIN (DID F190)
-vin_bytes = await uds.read_data_by_identifier(0xF190)
-print("VIN:", vin_bytes.decode(errors="ignore"))
+vin = await uds.read_data_by_identifier(0xF190)
+print("VIN:", vin.decode(errors="ignore"))
 ````
 
 
