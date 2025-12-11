@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "carbus-lib"
-version = "0.1.0"
+version = "0.1.1"
 description = "Async CAN / ISO-TP / UDS library for Car Bus Analyzer"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/controllerzz/car_bus_lib"
+Homepage = "https://github.com/controllerzz/carbus_lib"
 
 [tool.setuptools]
 package-dir = {"" = "."}
