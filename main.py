@@ -5,17 +5,17 @@ from isotp_async.carbus_iface import CarBusCanTransport
 from isotp_async.transport import IsoTpChannel
 from uds_async.client import UdsClient
 
-# import logging
-#
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-# )
-#
-# logging.getLogger("carbus_async.wire").setLevel(logging.DEBUG)
+import logging
 
 
-async def main():
+async def main(is_debug=True):
+
+    if is_debug:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        )
+        logging.getLogger("carbus_async.wire").setLevel(logging.DEBUG)
 
     dev = await CarBusDevice.open("COM6")
 
@@ -53,4 +53,4 @@ async def main():
     await dev.close()
 
 
-asyncio.run(main())
+asyncio.run(main(is_debug=False))

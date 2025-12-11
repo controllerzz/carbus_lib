@@ -13,6 +13,11 @@ try:
     __all__ = [
         "UdsClient",
         "UdsServer",
+        "UdsRequest",
+        "UdsResponse",
+        "UdsPositiveResponse",
+        "UdsNegativeResponse",
+        "ResponseCode",
     ]
 except ImportError:
     # если types.py нет или переименован — хотя бы клиент и сервер доступны
