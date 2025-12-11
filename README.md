@@ -19,7 +19,7 @@
 
 ```bash
 git clone https://github.com/controllerzz/carbus_lib.git
-cd car_bus_lib
+cd carbus_lib
 pip install -e .
 ```
 
