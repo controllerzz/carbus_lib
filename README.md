@@ -107,19 +107,14 @@ ISO-TP канал строится поверх CarBusDevice:
 ````python
 from isotp_async.transport import IsoTpChannel
 
-# предполагается, что dev уже открыт и канал CAN настроен
-isotp = IsoTpChannel(
-    device=dev,
-    channel=1,
-    tx_id=0x7E0,  # наш запрос
-    rx_id=0x7E8,  # ответ ЭБУ
-)
+can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)
+isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
 
 # отправить запрос ReadDataByIdentifier F190 (VIN)
-await isotp.send(b"\x22\xF1\x90")
+await isotp.send_pdu(b"\x22\xF1\x90")
 
 # получить полный ответ (single или multi-frame)
-resp = await isotp.recv(timeout=1.0)
+resp = await isotp.recv_pdu(timeout=30.0)
 print("ISO-TP:", resp.hex())
 ````
 
