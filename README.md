@@ -1,4 +1,4 @@
-# car-bus-lib (async CAN / ISO-TP / UDS stack)
+# carbus-lib (async CAN / ISO-TP / UDS stack)
 
 Асинхронная библиотека на Python для работы с CAN-адаптером **CAN-Hacker / Car Bus Analyzer**:
 
@@ -7,8 +7,9 @@
 - 🩺 **`uds_async`** – UDS (ISO 14229) клиент и сервер (диагностика, чтение VIN и т.п.)
 - 🌐 **`TCP-bridge`** – удалённое подключение к адаптеру через сеть (как будто он воткнут локально)
 
-> Python 3.11 и выше  
+> Python 3.10 и выше  
 > Никаких «магических» зависимостей — всё на `asyncio`.  
+> Поддерживаемые интерфейсы: https://canhacker.ru/shop/
 > _*Тестировалось на устройствах с Протоколом Версии 22_
 
 ---
@@ -81,21 +82,29 @@ async def main():
 asyncio.run(main())
 ````
 
-Возможность настройки канала через Bit Timing
+## Настройка канала через Bit Timing
 ````python
 # CANFD+BRS 500/2000 kbit/s
 await dev.open_can_channel_custom(
     channel=1,
-    nominal=(15, 12, 3, 1),  # Prescaler, tqSeg1, tqSeg2, SyncJW
-    data=(6, 7, 2, 1),  # Prescaler, tqSeg1, tqSeg2, SyncJW
+    nominal_timing=CanTiming(
+        prescaler=15,
+        tq_seg1=12,
+        tq_seg2=3,
+        sjw=1
+    ),
+    data_timing=CanTiming(
+        prescaler=6,
+        tq_seg1=7,
+        tq_seg2=2,
+        sjw=1
+    ),
     fd=True,
     brs=True,
 )
 ````
 
-## Информация об устройстве и фильтры
-
-Пример запроса DEVICE_INFO и настройки фильтров:
+## Полученияе информации об устройстве:
 ````python
 info = await dev.get_device_info()
 
@@ -103,6 +112,16 @@ print("HW:", info.hardware_name)
 print("FW:", info.firmware_version)
 print("Serial:", info.serial_int)
 
+print("Features:",
+      "gateway" if info.feature_gateway else "",
+      "isotp" if info.feature_isotp else "",
+      "txbuf" if info.feature_tx_buffer else "",
+      "txtask" if info.feature_tx_task else "",
+      )
+````
+
+## Пример настройки фильтров:
+````python
 # очистить все фильтры на канале 1
 await dev.clear_all_filters(1)
 
@@ -113,15 +132,19 @@ await dev.set_std_id_filter(
     can_id=0x7E8,
     mask=0x7FF,
 )
+````
 
-# включить/выключить терминатор 120 Ω
+## Управление терминатором 120 Ω:
+````python
 await dev.set_terminator(channel=1, enabled=True)
+await dev.set_terminator(channel=2, enabled=False)
+
 ````
 
 ## ISO-TP (isotp_async)
 ISO-TP канал строится поверх CarBusDevice:
 ````python
-from isotp_async.transport import IsoTpChannel
+from isotp_async import IsoTpChannel
 
 can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)
 isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
@@ -130,7 +153,7 @@ isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
 await isotp.send_pdu(b"\x22\xF1\x90")
 
 # получить полный ответ (single или multi-frame)
-resp = await isotp.recv_pdu(timeout=30.0)
+resp = await isotp.recv_pdu(timeout=5.0)
 print("ISO-TP:", resp.hex())
 ````
 
@@ -139,7 +162,7 @@ print("ISO-TP:", resp.hex())
 Клиент UDS использует IsoTpChannel:
 ````python
 from isotp_async import CarBusCanTransport
-from isotp_async.transport import IsoTpChannel
+from isotp_async import IsoTpChannel
 from uds_async import UdsClient
 
 can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)

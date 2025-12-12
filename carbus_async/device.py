@@ -13,19 +13,6 @@ from .exceptions import CarBusError, SyncError, CommandError
 from .messages import CanMessage
 
 
-from .protocol import (
-    Command,
-    CommandHeader,
-    MsgCommandHeader,
-    HeaderFlags,
-    BusMessageFlags,
-    CC_MULTIWORD,
-    is_ack,
-    base_command_from_ack,
-    need_extended_header,
-)
-
-
 NOMINAL_BITRATE_INDEX: Dict[int, int] = {
     10_000: 0,
     20_000: 1,
@@ -52,6 +39,14 @@ DATA_BITRATE_INDEX: Dict[int, int] = {
     4_000_000: 3,
     5_000_000: 4,
 }
+
+
+@dataclass(frozen=True)
+class CanTiming:
+    prescaler: int
+    tq_seg1: int
+    tq_seg2: int
+    sjw: int
 
 
 @dataclass
@@ -765,8 +760,8 @@ class CarBusDevice:
             self,
             channel: int = 1,
             *,
-            nominal: tuple[int, int, int, int] | None,
-            data: tuple[int, int, int, int] | None = None,
+            nominal_timing: CanTiming | None,
+            data_timing: CanTiming | None = None,
             fd: bool = False,
             brs: bool = False,
             listen_only: bool = False,
@@ -810,8 +805,11 @@ class CarBusDevice:
         params: list[int] = [cc_can_mode, cc_can_frame]
 
         # 3) Nominal custom bitrate (CC_BUS_SPEED_N)
-        if nominal is not None:
-            presc, seg1, seg2, sjw = nominal
+        if nominal_timing is not None:
+            presc=nominal_timing.prescaler
+            seg1=nominal_timing.tq_seg1
+            seg2=nominal_timing.tq_seg2
+            sjw=nominal_timing.sjw
             header_n = 0x01000000 | CC_MULTIWORD | (2 << 16)
             params.append(header_n)
 
@@ -820,8 +818,11 @@ class CarBusDevice:
             params.append(int.from_bytes(b[4:8], "little"))
 
         # 4) Data custom bitrate (CC_BUS_SPEED_D)
-        if fd and data is not None:
-            presc, seg1, seg2, sjw = data
+        if fd and data_timing is not None:
+            presc=data_timing.prescaler
+            seg1=data_timing.tq_seg1
+            seg2=data_timing.tq_seg2
+            sjw=data_timing.sjw
             header_d = 0x02000000 | CC_MULTIWORD | (2 << 16)
             params.append(header_d)
 

@@ -1,9 +1,9 @@
 import asyncio
 
 from carbus_async import CanMessage
-from carbus_async.device import CarBusDevice
+from carbus_async.device import CarBusDevice, CanTiming
 from isotp_async.carbus_iface import CarBusCanTransport
-from isotp_async.transport import IsoTpChannel
+from isotp_async import IsoTpChannel
 from uds_async.client import UdsClient
 
 import logging
@@ -24,6 +24,24 @@ async def main(is_debug=False):
         channel=1,
         nominal_bitrate=500_000,
     )
+
+    # await dev.open_can_channel_custom(
+    #     channel=1,
+    #     nominal_timing=CanTiming(
+    #         prescaler=15,
+    #         tq_seg1=12,
+    #         tq_seg2=3,
+    #         sjw=1
+    #     ),
+    #     data_timing=CanTiming(
+    #         prescaler=6,
+    #         tq_seg1=7,
+    #         tq_seg2=2,
+    #         sjw=1
+    #     ),
+    #     fd=True,
+    #     brs=True,
+    # )
 
     await dev.set_terminator(channel=1, enabled=True)
 
