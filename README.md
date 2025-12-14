@@ -9,7 +9,7 @@
 
 > Python 3.10 и выше  
 > Никаких «магических» зависимостей — всё на `asyncio`.  
-> Поддерживаемые интерфейсы: https://canhacker.ru/shop/
+> Поддерживаемые интерфейсы: https://canhacker.ru/shop/  
 > _*Тестировалось на устройствах с Протоколом Версии 22_
 
 ---
@@ -144,10 +144,9 @@ await dev.set_terminator(channel=2, enabled=False)
 ## ISO-TP (isotp_async)
 ISO-TP канал строится поверх CarBusDevice:
 ````python
-from isotp_async import IsoTpChannel
+from isotp_async import open_isotp
 
-can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)
-isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
+isotp = await open_isotp(dev, channel=1, tx_id=0x7E0, rx_id=0x7E8)
 
 # отправить запрос ReadDataByIdentifier F190 (VIN)
 await isotp.send_pdu(b"\x22\xF1\x90")
@@ -161,18 +160,15 @@ print("ISO-TP:", resp.hex())
 
 Клиент UDS использует IsoTpChannel:
 ````python
-from isotp_async import CarBusCanTransport
-from isotp_async import IsoTpChannel
+from isotp_async import open_isotp
 from uds_async import UdsClient
 
-can_tr = CarBusCanTransport(dev, channel=1, rx_id=0x7E8)
-isotp = IsoTpChannel(can_tr, tx_id=0x7E0, rx_id=0x7E8)
+isotp = await open_isotp(dev, channel=1, tx_id=0x7E0, rx_id=0x7E8)
 uds = UdsClient(isotp)
 
 vin = await uds.read_data_by_identifier(0xF190)
 print("VIN:", vin.decode(errors="ignore"))
 ````
-
 
 
 ## Удалённая работа через TCP (tcp_bridge)
