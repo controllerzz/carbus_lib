@@ -104,7 +104,7 @@ await dev.open_can_channel_custom(
 )
 ````
 
-## Полученияе информации об устройстве:
+## Получение информации об устройстве:
 ````python
 info = await dev.get_device_info()
 
