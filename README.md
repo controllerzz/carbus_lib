@@ -146,6 +146,42 @@ await dev.set_terminator(channel=2, enabled=False)
 
 ````
 
+## Отправка периодичных сообщений:
+С константными данными
+````python
+from carbus_async import PeriodicCanSender
+
+sender = PeriodicCanSender(dev)
+sender.add(
+    "heartbeat",
+    channel=1,
+    can_id=0x123,
+    data=b"\x01\x02\x03\x04\x05\x06\x07\x08",
+    period_s=0.1,
+)
+````
+
+С модификацией данных
+````python
+from carbus_async import PeriodicCanSender
+
+sender = PeriodicCanSender(dev)
+
+def mod(tick, data):
+    b = bytearray(data)
+    b[0] = tick & 0xFF
+    return bytes(b)
+
+sender.add(
+    "cnt",
+    channel=1,
+    can_id=0x100,
+    data=b"\x00" * 8,
+    period_s=0.5,
+    modify=mod)
+````
+
+
 ## Хуки подписка на сообщение / сообщение + данные по маске:
 Подписка по CAN ID
 ````python

@@ -2,6 +2,7 @@ from .device import CarBusDevice
 from .messages import CanMessage, MessageDirection
 from .exceptions import CarBusError, CommandError, SyncError
 from .can_router import CanIdRouter, RoutedCarBusCanTransport
+from .periodic import PeriodicCanSender, PeriodicJob
 
 __all__ = [
     "CarBusDevice",
@@ -12,4 +13,6 @@ __all__ = [
     "SyncError",
     "CanIdRouter",
     "RoutedCarBusCanTransport",
+    "PeriodicCanSender",
+    "PeriodicJob",
 ]

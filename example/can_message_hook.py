@@ -1,10 +1,7 @@
 import asyncio
 
 from carbus_async import CarBusDevice, CanMessage
-from isotp_async import open_isotp
-from uds_async import UdsClient
 import signal
-import logging
 
 
 async def wait_forever() -> None:

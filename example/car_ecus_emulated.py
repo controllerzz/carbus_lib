@@ -4,18 +4,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-from carbus_async import CanIdRouter, RoutedCarBusCanTransport
+from carbus_async import CanIdRouter, RoutedCarBusCanTransport, PeriodicCanSender
 from carbus_async.device import CarBusDevice
 from isotp_async import open_isotp, IsoTpConnection
 from uds_async import UdsServer
 from uds_async.exceptions import UdsNegativeResponse, UdsError
 
-# import logging
-#
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-# )
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 TESTER_ID = 0x740
 ECU_ID = 0x760
