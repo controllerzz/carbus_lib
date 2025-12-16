@@ -10,16 +10,16 @@ from uds_async import UdsClient
 from uds_async.exceptions import UdsNegativeResponse, UdsError
 
 
-TESTER_ID = 0x740
-ECU_ID = 0x760
+TESTER_ID = 0x7E0
+ECU_ID = 0x7E8
 
 DEFAULT_PORT = "COM6"
 DEFAULT_BAUD = 115200
 DEFAULT_CAN_CH = 1
 DEFAULT_CAN_BITRATE = 500_000
 
-DID_RANGE = range(0x10000)
-OUT_FILE = Path("uds22_params.pkl")
+DID_RANGE = range(0x0000, 0x10000)
+OUT_FILE = Path("ecu_uds22_params.pkl")
 
 
 def save_dict_pickle(path: str | Path, data: dict[int, bytes]) -> None:
@@ -47,10 +47,11 @@ async def setup_device(
     dev = await CarBusDevice.open(port, baudrate=baudrate)
 
     await dev.open_can_channel(channel=can_channel, nominal_bitrate=nominal_bitrate)
-    await dev.set_terminator(channel=can_channel, enabled=True)
 
-    await dev.clear_all_filters(can_channel)
+    # await dev.clear_all_filters(can_channel)
     await dev.set_std_id_filter(channel=can_channel, index=0, can_id=0x700, mask=0x700)
+
+    await dev.set_terminator(channel=can_channel, enabled=True)
 
     return dev
 

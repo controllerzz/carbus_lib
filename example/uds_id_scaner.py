@@ -36,7 +36,6 @@ async def setup_device(cfg: CanScanConfig) -> CarBusDevice:
         mask=0x700,
     )
 
-    await dev.clear_receive_buffer()
     return dev
 
 

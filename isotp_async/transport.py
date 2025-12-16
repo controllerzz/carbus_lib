@@ -24,7 +24,7 @@ class IsoTpChannel:
     tx_id: int
     rx_id: int
 
-    block_size: int = 8
+    block_size: int = 0
     st_min_ms: int = 0
     fc_timeout: float = 1.0
     cf_timeout: float = 1.0
@@ -214,10 +214,24 @@ class IsoTpChannel:
 
             payload.extend(cf.data[1:])
             expected_sn = (expected_sn + 1) & 0x0F
-            if expected_sn == 0:
-                expected_sn = 1
+            # надо подумать, гдето нужно так((((
+            # if expected_sn == 0:
+            #     expected_sn = 1
 
             if st_min > 0:
                 await asyncio.sleep(st_min)
 
         return bytes(payload[:total_length])
+
+
+class IsoTpConnection(IsoTpChannel):
+    async def send(self, payload: bytes) -> None:
+        await self.send_pdu(payload)
+
+    async def recv(self, timeout: float = 1.0) -> Optional[bytes]:
+        return await self.recv_pdu(timeout=timeout)
+
+    async def request(self, payload: bytes, timeout: float = 1.0) -> Optional[bytes]:
+
+        await self.send_pdu(payload)
+        return await self.recv_pdu(timeout=timeout)
