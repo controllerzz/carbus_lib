@@ -5,7 +5,7 @@ import contextlib
 import logging
 import struct
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Awaitable, Callable
 
 import serial_asyncio
 
@@ -400,6 +400,30 @@ class _PendingRequest:
     command: int
 
 
+CanHook = Callable[[int, CanMessage], Awaitable[None]]
+CanPred = Callable[[int, CanMessage], bool]
+
+@dataclass(frozen=True)
+class _CanHookRule:
+    can_id: int | None                 # None => любой ID
+    value: bytes | None                # None => матч только по ID/predicate
+    mask: bytes | None
+    offset: int
+    handler: CanHook
+    predicate: CanPred | None = None
+
+
+def _match_masked(data: bytes, *, offset: int, value: bytes, mask: bytes) -> bool:
+    if len(value) != len(mask):
+        raise ValueError("mask and value must have same length")
+    end = offset + len(value)
+    if offset < 0 or len(data) < end:
+        return False
+    for i in range(len(value)):
+        if (data[offset + i] & mask[i]) != (value[i] & mask[i]):
+            return False
+    return True
+
 @dataclass
 class CarBusDevice:
     port: str
@@ -414,6 +438,8 @@ class CarBusDevice:
     _seq_counter: int = field(init=False, default=0, repr=False)
     _reader_task: Optional[asyncio.Task] = field(init=False, default=None, repr=False)
     _closed: bool = field(init=False, default=False, repr=False)
+    _can_hooks: List[_CanHookRule] = field(init=False, repr=False)
+    _can_hook_sem: asyncio.Semaphore = field(init=False, repr=False)
 
     _log: logging.Logger = field(init=False, repr=False)
     _wire_log: logging.Logger = field(init=False, repr=False)
@@ -502,6 +528,9 @@ class CarBusDevice:
         self._seq_counter = 0
         self._reader_task = None
         self._closed = False
+        self._can_hooks = []
+        self._can_hook_sem = asyncio.Semaphore(200)
+
 
     async def close(self) -> None:
         if self._closed:
@@ -529,6 +558,69 @@ class CarBusDevice:
                         CarBusError("Device closed before response was received")
                     )
             self._pending.clear()
+
+    def on_can_id(self, can_id: int, *, predicate: CanPred | None = None):
+        """Хук на каждый принятый CAN кадр с данным can_id."""
+        def deco(fn: CanHook) -> CanHook:
+            self._can_hooks.append(_CanHookRule(
+                can_id=can_id,
+                value=None, mask=None, offset=0,
+                handler=fn,
+                predicate=predicate,
+            ))
+            return fn
+        return deco
+
+    def on_can_match(
+        self,
+        *,
+        can_id: int | None = None,
+        value: bytes,
+        mask: bytes | None = None,
+        offset: int = 0,
+        predicate: CanPred | None = None,
+    ):
+        """
+        Хук по CAN-ID (или любой) + совпадение по маске.
+        Проверка: (data[offset+i] & mask[i]) == (value[i] & mask[i])
+        """
+        if mask is None:
+            mask = bytes([0xFF]) * len(value)
+
+        def deco(fn: CanHook) -> CanHook:
+            self._can_hooks.append(_CanHookRule(
+                can_id=can_id,
+                value=value,
+                mask=mask,
+                offset=offset,
+                handler=fn,
+                predicate=predicate,
+            ))
+            return fn
+        return deco
+
+    def _fire_can_hooks(self, channel: int, msg: CanMessage) -> None:
+        if not self._can_hooks:
+            return
+
+        data = bytes(msg.data)
+        for rule in self._can_hooks:
+            if rule.can_id is not None and rule.can_id != msg.can_id:
+                continue
+            if rule.predicate is not None and not rule.predicate(channel, msg):
+                continue
+            if rule.value is not None:
+                if not _match_masked(data, offset=rule.offset, value=rule.value, mask=rule.mask or b""):
+                    continue
+
+            asyncio.create_task(self._run_can_hook(rule.handler, channel, msg))
+
+    async def _run_can_hook(self, fn: CanHook, channel: int, msg: CanMessage) -> None:
+        async with self._can_hook_sem:
+            try:
+                await fn(channel, msg)
+            except Exception:
+                self._log.exception("CAN hook failed (ch=%s id=0x%X)", channel, msg.can_id)
 
     def _start_reader(self) -> None:
         if self._reader_task is None or self._reader_task.done():
@@ -1195,6 +1287,8 @@ class CarBusDevice:
             dlc=dlc,
             data=data,
         )
+
+        self._fire_can_hooks(channel, msg)
 
         await self._rx_queue.put((channel, msg))
 

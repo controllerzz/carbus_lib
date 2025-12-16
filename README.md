@@ -83,6 +83,7 @@ asyncio.run(main())
 ````
 
 ## Настройка канала через Bit Timing
+Возможность конфигруации скорости CAN канала через Bit Timing
 ````python
 # CANFD+BRS 500/2000 kbit/s
 await dev.open_can_channel_custom(
@@ -105,6 +106,7 @@ await dev.open_can_channel_custom(
 ````
 
 ## Получение информации об устройстве:
+Получение инфмормации об устройстве и его фичах
 ````python
 info = await dev.get_device_info()
 
@@ -121,6 +123,8 @@ print("Features:",
 ````
 
 ## Пример настройки фильтров:
+11 bit фильтры имеют index от 0 до 27 включительно,
+29 bit фитры имеют index от 28 до 35 включительно
 ````python
 # очистить все фильтры на канале 1
 await dev.clear_all_filters(1)
@@ -135,12 +139,32 @@ await dev.set_std_id_filter(
 ````
 
 ## Управление терминатором 120 Ω:
+Включаем терминатор на канале 1 и выключаем терминатор на канале 2
 ````python
 await dev.set_terminator(channel=1, enabled=True)
 await dev.set_terminator(channel=2, enabled=False)
 
 ````
 
+## Хуки подписка на сообщение / сообщение + данные по маске:
+Подписка по CAN ID
+````python
+@dev.on_can_id(0x7E0)
+async def on_engine_req(ch, msg):
+    print("ENGINE:", hex(msg.can_id), msg.data.hex())
+````
+
+Подписка по CAN ID + маске данных
+````python
+@dev.on_can_match(
+    can_id=0x7E0,
+    value=b"\x02\x10\x00",
+    mask=b"\xFF\xFF\x00",
+)
+async def on_session_control(ch, msg):
+    print("SessionControl")
+````    
+    
 ## ISO-TP (isotp_async)
 ISO-TP канал строится поверх CarBusDevice:
 ````python
