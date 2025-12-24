@@ -1,6 +1,6 @@
 import asyncio
 
-from carbus_async import CarBusDevice
+from carbus_async import CarBusDevice, open_remote_device
 from isotp_async import open_isotp
 from uds_async import UdsClient
 
@@ -16,7 +16,7 @@ async def main(is_debug=False):
         )
         logging.getLogger("carbus_async.wire").setLevel(logging.DEBUG)
 
-    dev = await CarBusDevice.open("COM6")
+    dev = await open_remote_device("127.0.0.1", 9000, serial=5957, password="1234")
 
     print(f"Devise SN: {await dev.get_serial()}")
 
@@ -36,4 +36,4 @@ async def main(is_debug=False):
     await dev.close()
 
 
-asyncio.run(main())
+asyncio.run(main(is_debug=True))

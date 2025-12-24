@@ -472,6 +472,39 @@ class CarBusDevice:
     async def open_tcp(cls, host: str, port: int, **kwargs) -> "CarBusDevice":
         return await cls.open(f"socket://{host}:{port}", **kwargs)
 
+    @classmethod
+    async def open_stream(
+        cls,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        *,
+        logical_port: str = "stream://remote",
+        baudrate: int = 115200,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        use_can: bool = True,
+        use_lin: bool = False,
+    ) -> "CarBusDevice":
+        self = cls(port=logical_port, baudrate=baudrate, loop=loop)
+
+        self._log = logging.getLogger(f"carbus_async.device.{logical_port}")
+        self._wire_log = logging.getLogger(f"carbus_async.wire.{logical_port}")
+
+        self._reader = reader
+        self._writer = writer
+
+        self._rx_queue = asyncio.Queue()
+        self._rx_channel_queues = {}
+        self._pending = {}
+        self._seq_counter = 0
+        self._reader_task = None
+        self._closed = False
+
+        await self.sync()
+        self._start_reader()
+        await self.device_open(use_can=use_can, use_lin=use_lin)
+        return self
+
+
     async def _connect(self) -> None:
         loop = self.loop or asyncio.get_running_loop()
 
@@ -720,6 +753,22 @@ class CarBusDevice:
             )
 
         return DeviceInfo.from_payload(payload)
+
+    async def has_terminator(self, channel=1) -> bool:
+        info = await self.get_device_info()
+        feat = info.channel_features.get(channel)
+        return bool(feat and feat.get("terminator", False))
+
+    async def ensure_terminator(self, channel: int = 1, enabled: bool = True):
+        if not await self.has_terminator(channel):
+            return False
+        await self.set_terminator(channel, enabled=enabled)
+
+    async def get_serial(self) -> bool:
+        info = await self.get_device_info()
+        return info.serial_int;
+
+
 
     async def device_open(self, *, use_can: bool = True, use_lin: bool = False) -> None:
         if use_can and use_lin:

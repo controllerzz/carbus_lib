@@ -3,6 +3,7 @@ from .messages import CanMessage, MessageDirection
 from .exceptions import CarBusError, CommandError, SyncError
 from .can_router import CanIdRouter, RoutedCarBusCanTransport
 from .periodic import PeriodicCanSender, PeriodicJob
+from .remote.client import open_remote_device
 
 __all__ = [
     "CarBusDevice",
@@ -15,4 +16,5 @@ __all__ = [
     "RoutedCarBusCanTransport",
     "PeriodicCanSender",
     "PeriodicJob",
+    "open_remote_device",
 ]

@@ -124,7 +124,7 @@ print("Features:",
 
 ## Пример настройки фильтров:
 11 bit фильтры имеют index от 0 до 27 включительно,
-29 bit фитры имеют index от 28 до 35 включительно
+29 bit фильтры имеют index от 28 до 35 включительно
 ````python
 # очистить все фильтры на канале 1
 await dev.clear_all_filters(1)
@@ -143,11 +143,24 @@ await dev.set_std_id_filter(
 ````python
 await dev.set_terminator(channel=1, enabled=True)
 await dev.set_terminator(channel=2, enabled=False)
+````
 
+Проверка наличия внутреннего терминатора у девайса
+````python
+if await dev.has_terminator():
+    await dev.set_terminator(channel=1, enabled=True)
+    print("Device has an internal terminator")
+else:
+    print("Device does not have an internal terminator")
+````
+
+Включаем терминатор на канале 1, если это поддерживает девайс
+````python
+await dev.ensure_terminator(channel=1, enabled=True)
 ````
 
 ## Отправка периодичных сообщений:
-С константными данными
+Отправка сообщений с статичными данными и периодом 100мс
 ````python
 from carbus_async import PeriodicCanSender
 
@@ -161,7 +174,7 @@ sender.add(
 )
 ````
 
-С модификацией данных
+Отправка сообщений с модификацией данных и периодом 500мс
 ````python
 from carbus_async import PeriodicCanSender
 
