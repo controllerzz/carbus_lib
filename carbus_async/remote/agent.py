@@ -181,7 +181,23 @@ async def agent_run(
         log.info("Agent stopped.")
 
 
-async def main() -> None:
+async def main_async(
+    port: str,
+    baudrate: int,
+    server: str,
+    serial: str,
+    password: str,
+) -> None:
+    await agent_run(
+        port=port,
+        baudrate=baudrate,
+        server=server,
+        serial=serial,
+        password=password,
+    )
+
+
+def cli() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", required=True, help="COM port, e.g. COM6")
     ap.add_argument("--baudrate", type=int, default=115200)
@@ -190,18 +206,22 @@ async def main() -> None:
     ap.add_argument("--password", required=True, help="shared password for this serial")
     args = ap.parse_args()
 
-    await agent_run(
-        port=args.port,
-        baudrate=args.baudrate,
-        server=args.server,
-        serial=str(args.serial),
-        password=str(args.password),
-    )
-
-
-if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    asyncio.run(main())
+
+    asyncio.run(
+        main_async(
+            port=args.port,
+            baudrate=args.baudrate,
+            server=args.server,
+            serial=str(args.serial),
+            password=str(args.password),
+        )
+    )
+
+
+if __name__ == "__main__":
+    cli()
+

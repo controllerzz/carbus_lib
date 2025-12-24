@@ -25,7 +25,7 @@ async def main(is_debug=False):
         channel=1,
         can_id=0x100,
         data=b"\x00" * 8,
-        period_s=0.5,
+        period_s=0.2,
         modify=mod)
 
     sender.add(
@@ -33,7 +33,7 @@ async def main(is_debug=False):
         channel=1,
         can_id=0x123,
         data=b"\x01\x02\x03\x04\x05\x06\x07\x08",
-        period_s=0.05,
+        period_s=0.03,
     )
 
     try:
