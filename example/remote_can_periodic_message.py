@@ -1,10 +1,10 @@
 import asyncio
 
-from carbus_async import CarBusDevice, PeriodicCanSender
+from carbus_async import CarBusDevice, PeriodicCanSender, open_remote_device
 
 
 async def main(is_debug=False):
-    dev = await CarBusDevice.open("COM6")
+    dev = await open_remote_device("84.54.37.149", 9000, serial=5957, password="1234")
 
     await dev.open_can_channel(
         channel=1,

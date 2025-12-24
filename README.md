@@ -243,8 +243,38 @@ vin = await uds.read_data_by_identifier(0xF190)
 print("VIN:", vin.decode(errors="ignore"))
 ````
 
+## Удалённая работа через внешний сервер
+### 1. Сервер/Relay
+На сервере устанавливаем библиотеку carbus-lib, далее запускаем сервер
 
-## Удалённая работа через TCP (tcp_bridge)
+    carbus-relay-server --host 0.0.0.0 --port 9000
+или
+
+    python -m carbus_async.remote.server --host 0.0.0.0 --port 9000
+
+### 2. Агент
+На машине куда подключен девайс запускаем агента
+
+    carbus-relay-agent --port COM6 --baudrate 115200 --server <IP_СЕРВЕРА>:9000 --serial 5957 --password 1234
+или
+    
+    python -m carbus_async.remote.agent --port COM6 --baudrate 115200 --server <IP_СЕРВЕРА>:9000 --serial 5957 --password 1234
+
+где
+
+    --server <IP_СЕРВЕРА>:9000 - адрес и порт сервера
+    --serial 5957 - серийный номер девайса
+    --password 1234 - пароль, требуется для получения уделнного доступа
+
+### 3. Клиент (удалённая машина)
+Для получения удаленного доступа используем функцию ***open_remote_device***
+
+````python
+from carbus_async import open_remote_device
+dev = await open_remote_device(<IP_СЕРВЕРА>, 9000, serial=5957, password="1234")
+````
+
+## Удалённая работа в локальной сети через TCP (tcp_bridge)
 
 ### 1. Сервер (рядом с адаптером)
 
