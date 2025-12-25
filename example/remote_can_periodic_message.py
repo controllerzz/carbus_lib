@@ -4,7 +4,7 @@ from carbus_async import CarBusDevice, PeriodicCanSender, open_remote_device
 
 
 async def main(is_debug=False):
-    dev = await open_remote_device("84.54.37.149", 9000, serial=5957, password="1234")
+    dev = await open_remote_device("185.42.26.80", 9000, serial=5957, password="1234")
 
     await dev.open_can_channel(
         channel=1,
@@ -25,7 +25,7 @@ async def main(is_debug=False):
         channel=1,
         can_id=0x100,
         data=b"\x00" * 8,
-        period_s=0.2,
+        period_s=0.001,
         modify=mod)
 
     sender.add(
