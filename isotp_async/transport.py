@@ -28,6 +28,7 @@ class IsoTpChannel:
     st_min_ms: int = 0
     fc_timeout: float = 1.0
     cf_timeout: float = 1.0
+    tx_gap_s = 0.001
 
     async def send_pdu(self, data: bytes) -> None:
         length = len(data)
@@ -88,7 +89,6 @@ class IsoTpChannel:
             raise RuntimeError(f"ISO-TP: unsupported FlowStatus=0x{fs:02X}")
 
         if bs == 0x00:
-            # 0 => "unlimited"
             bs = 0
 
         st_min = _st_min_to_seconds(st_min_raw)
@@ -139,13 +139,16 @@ class IsoTpChannel:
             await self.can.send(msg)
 
             seq_num = (seq_num + 1) & 0x0F
-            if seq_num == 0:
-                seq_num = 0x1
+            # if seq_num == 0:
+            #     seq_num = 0x1
 
             frames_in_block += 1
 
             if st_min > 0:
                 await asyncio.sleep(st_min)
+
+            if self.tx_gap_s > 0:
+                await asyncio.sleep(self.tx_gap_s)
 
     async def recv_pdu(self, timeout: float = 1.0) -> Optional[bytes]:
 
@@ -220,6 +223,9 @@ class IsoTpChannel:
 
             if st_min > 0:
                 await asyncio.sleep(st_min)
+
+            if tx_gap_s > 0:
+                await asyncio.sleep(tx_gap_s)
 
         return bytes(payload[:total_length])
 

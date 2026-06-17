@@ -49,6 +49,40 @@ class CanTiming:
     sjw: int
 
 
+DEFAULT_CAN_CLOCK_HZ = 120_000_000
+
+# Проверенные bit-timing'и для CAN-модуля с тактовой 120 МГц (точка выборки ~80%).
+# open_can_channel() для FD-канала задаёт скорость именно таймингами, а не
+# одиночным индексом data-скорости (CC_BUS_SPEED_D): прошивка этих адаптеров
+# применяет явные тайминги надёжно, а индекс data-скорости не отрабатывает —
+# канал открывается, но FD/BRS-кадры не уходят в шину.
+_NOMINAL_TIMINGS_120M: Dict[int, CanTiming] = {
+    1_000_000: CanTiming(prescaler=6,  tq_seg1=15, tq_seg2=4, sjw=1),  # 120/(6*20)
+    500_000:   CanTiming(prescaler=15, tq_seg1=12, tq_seg2=3, sjw=1),  # 120/(15*16)
+    250_000:   CanTiming(prescaler=30, tq_seg1=12, tq_seg2=3, sjw=1),  # 120/(30*16)
+    125_000:   CanTiming(prescaler=60, tq_seg1=12, tq_seg2=3, sjw=1),  # 120/(60*16)
+}
+_DATA_TIMINGS_120M: Dict[int, CanTiming] = {
+    5_000_000: CanTiming(prescaler=3,  tq_seg1=5, tq_seg2=2, sjw=1),   # 120/(3*8)
+    4_000_000: CanTiming(prescaler=3,  tq_seg1=7, tq_seg2=2, sjw=1),   # 120/(3*10)
+    2_000_000: CanTiming(prescaler=6,  tq_seg1=7, tq_seg2=2, sjw=1),   # 120/(6*10)
+    1_000_000: CanTiming(prescaler=12, tq_seg1=7, tq_seg2=2, sjw=1),   # 120/(12*10)
+    500_000:   CanTiming(prescaler=24, tq_seg1=7, tq_seg2=2, sjw=1),   # 120/(24*10)
+}
+
+
+def _resolve_timing(
+    table: Dict[int, CanTiming], bitrate: int, clock_hz: int, kind: str
+) -> CanTiming:
+    if clock_hz == DEFAULT_CAN_CLOCK_HZ and bitrate in table:
+        return table[bitrate]
+    raise ValueError(
+        f"Нет встроенного FD bit-timing для {kind}={bitrate} bps при тактовой "
+        f"{clock_hz} Гц. Доступно (для 120 МГц): {sorted(table)}. "
+        f"Задайте скорость явными таймингами через open_can_channel_custom(...)."
+    )
+
+
 @dataclass
 class DeviceInfoParam:
     header: int
@@ -823,7 +857,32 @@ class CarBusDevice:
         non_iso: bool = False,
         nominal_index: Optional[int] = None,
         data_index: Optional[int] = None,
+        can_clock_hz: Optional[int] = None,
     ) -> None:
+
+        # FD-канал настраиваем явными таймингами (рабочий путь): одиночный индекс
+        # data-скорости прошивкой не применяется, канал открывается, но FD/BRS-кадры
+        # не уходят в шину. Явное переопределение индексами/auto_detect не трогаем.
+        if fd and not (auto_detect or nominal_index is not None or data_index is not None):
+            if data_bitrate is None:
+                raise ValueError("fd=True требует указать data_bitrate")
+            clock = can_clock_hz or DEFAULT_CAN_CLOCK_HZ
+            await self.open_can_channel_custom(
+                channel,
+                nominal_timing=_resolve_timing(
+                    _NOMINAL_TIMINGS_120M, nominal_bitrate, clock, "nominal"
+                ),
+                data_timing=_resolve_timing(
+                    _DATA_TIMINGS_120M, data_bitrate, clock, "data"
+                ),
+                fd=True,
+                brs=brs,
+                listen_only=listen_only,
+                loopback=loopback,
+                retransmit=retransmit,
+                non_iso=non_iso,
+            )
+            return
 
         if loopback:
             mode_val = 0x02

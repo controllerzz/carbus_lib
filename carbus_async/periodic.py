@@ -72,6 +72,10 @@ class PeriodicJob:
             msg = CanMessage(
                 can_id=self.can_id,
                 data=out,
+                extended=self.extended,
+                rtr=self.rtr,
+                fd=self.fd,
+                brs=self.brs,
             )
             await dev.send_can(
                 msg,

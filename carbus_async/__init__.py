@@ -1,4 +1,4 @@
-from .device import CarBusDevice
+from .device import CarBusDevice, CanTiming
 from .messages import CanMessage, MessageDirection
 from .exceptions import CarBusError, CommandError, SyncError
 from .can_router import CanIdRouter, RoutedCarBusCanTransport
@@ -7,6 +7,7 @@ from .remote.client import open_remote_device
 
 __all__ = [
     "CarBusDevice",
+    "CanTiming",
     "CanMessage",
     "MessageDirection",
     "CarBusError",
